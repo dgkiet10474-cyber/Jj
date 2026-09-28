@@ -24,7 +24,6 @@ jobs:
           echo "Dang giai nen: $ZIP_FILE"
           mkdir -p project
           unzip -q -o "$ZIP_FILE" -d project
-          # Neu zip boc them 1 thu muc ben ngoai thi tim thu muc chua settings.gradle.kts
           SETTINGS=$(find project -maxdepth 3 -name "settings.gradle*" | head -n 1)
           if [ -z "$SETTINGS" ]; then
             echo "Khong thay settings.gradle trong zip"
@@ -33,10 +32,9 @@ jobs:
           fi
           echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
 
-          - name: Remove workflow bundled in zip
+      - name: Remove workflow bundled in zip
         run: |
           find project -type d -path "*/.github/workflows" -prune -exec rm -rf {} +
-          # xoa luon ca thu muc .github neu con trong
           find project -type d -name ".github" -empty -delete
           echo "Da xoa .github/workflows trong project"
 
