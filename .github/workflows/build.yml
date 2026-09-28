@@ -1,0 +1,63 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          ZIP_FILE=$(find . -maxdepth 2 -iname "remix-mediaforge*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Khong tim thay file zip remix-mediaforge*.zip"
+            ls -la
+            exit 1
+          fi
+          echo "Dang giai nen: $ZIP_FILE"
+          mkdir -p project
+          unzip -q -o "$ZIP_FILE" -d project
+          # Neu zip boc them 1 thu muc ben ngoai thi tim thu muc chua settings.gradle.kts
+          SETTINGS=$(find project -maxdepth 3 -name "settings.gradle*" | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "Khong thay settings.gradle trong zip"
+            find project -maxdepth 3
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
+
+          - name: Remove workflow bundled in zip
+        run: |
+          find project -type d -path "*/.github/workflows" -prune -exec rm -rf {} +
+          # xoa luon ca thu muc .github neu con trong
+          find project -type d -name ".github" -empty -delete
+          echo "Da xoa .github/workflows trong project"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+
+      - name: Build with Gradle
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MediaForge-debug-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 1
