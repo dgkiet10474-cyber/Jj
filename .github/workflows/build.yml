@@ -67,9 +67,13 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle :app:assembleRelease --stacktrace
 
+      - name: List APK output
+        run: ls -la ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/ || true
+
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: MediaForge-release-apk
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/app-release.apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
           retention-days: 1
