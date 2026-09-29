@@ -1,4 +1,4 @@
-name: Build Debug APK
+name: Build Release APK
 
 on:
   push:
@@ -49,13 +49,27 @@ jobs:
         with:
           gradle-version: 9.3.1
 
-      - name: Build with Gradle
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle :app:assembleDebug --stacktrace
+      # Tuy chon: neu co secret DEBUG_KEYSTORE_BASE64 thi dung keystore co dinh
+      # (de cai de len ban cu duoc). Khong co secret thi bo qua, AGP tu tao keystore moi.
+      - name: Restore debug keystore (optional)
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            mkdir -p ~/.android
+            echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > ~/.android/debug.keystore
+            echo "Da khoi phuc debug.keystore tu secret"
+          else
+            echo "Khong co secret DEBUG_KEYSTORE_BASE64, dung keystore tu sinh"
+          fi
 
-      - name: Upload Debug APK
+      - name: Build Release with Gradle
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: MediaForge-debug-apk
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          name: MediaForge-release-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/app-release.apk
           retention-days: 1
